@@ -2,7 +2,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Position {
     String text;
@@ -135,7 +137,7 @@ class Message {
 enum DomainTag {
     LEFT_BRACKET("("),
     RIGHT_BRACKET(")"),
-    COMBINATOR("comb"),
+    COMBINATOR("c"),
     INFINITY_COMP("inf"),
     EXPONENT_COMP("exp"),
     QUADRATE_COMP("quad"),
@@ -413,7 +415,7 @@ class Lexer {
         while (true) {
             Token token = scanner.nextToken();
             if (token.tag == DomainTag.COMBINATOR) {
-                CombinatorialLogicInterpreter.seq_lexems.append(isAfterQuestion ? " " : "\n");
+                CombinatorialLogicInterpreter.seq_lexems.append(isAfterQuestion ? "" : "\n");
             } else if (token.tag == DomainTag.QUESTION_SIGN) {
                 isAfterQuestion = true;
                 CombinatorialLogicInterpreter.seq_lexems.append("\n");
@@ -436,15 +438,176 @@ class Lexer {
     }
 }
 
+class AnonComb extends Token {
+    private ArrayList<Token> tokensInBrackets = new ArrayList<>();
+
+    AnonComb(String attr, Position starting, Position following) {
+        super(attr, DomainTag.COMBINATOR, starting, following);
+    }
+
+    void addToken(Token token){
+        tokensInBrackets.add(token);
+    }
+}
+
 public class CombinatorialLogicInterpreter {
     static ArrayList<Token> tokens = new ArrayList<>();
     static StringBuilder seq_lexems = new StringBuilder();
+
+    private HashMap<String, AnonComb> userCombs = new HashMap<>();
+    private ArrayList<Token> taskTokens = new ArrayList<>();
+
+    int numberOfCurrentToken;
+    Token currentToken;
 
     public static void main(String[] args) {
         Lexer l = new Lexer();
         l.lex(args[0]);
         System.out.println(seq_lexems);
-        //CombinatorialLogicInterpreter interpreter = new CombinatorialLogicInterpreter();
-        //interpreter.interpret();
+        CombinatorialLogicInterpreter interpreter = new CombinatorialLogicInterpreter();
+        interpreter.parse();
+    }
+
+    private void nextTok() {
+        currentToken = tokens.get(numberOfCurrentToken);
+        numberOfCurrentToken++;
+    }
+
+    public void parse() {
+        numberOfCurrentToken = 1;
+        currentToken = tokens.get(0);
+        parseProg();
+    }
+
+    //Prog = Comp {Rule} '?' Task
+    private void parseProg() {
+        parseComp();
+        while (currentToken.tag == DomainTag.COMBINATOR) {
+            parseRule();
+        }
+        if (currentToken.tag == DomainTag.QUESTION_SIGN) {
+            nextTok();
+            parseTask();
+            if (currentToken.tag != DomainTag.END_OF_PROGRAM)
+                endProgram("expected end_of_program");
+        } else
+            endProgram("expected question_sign");
+    }
+
+    //Comp = "inf" | "exp" | "quad"
+    private void parseComp() {
+        if (currentToken.tag == DomainTag.INFINITY_COMP || currentToken.tag == DomainTag.EXPONENT_COMP ||
+                currentToken.tag == DomainTag.QUADRATE_COMP) {
+            nextTok();
+        } else
+            endProgram("expected complexity");
+    }
+
+    //Rule = comb '=' (BasicCombsBrackets | BasicComb) {BasicCombsBrackets | BasicComb}
+    private void parseRule() {
+        if (currentToken.tag == DomainTag.COMBINATOR) {
+            nextTok();
+            if (currentToken.tag == DomainTag.EQUAL_SIGN) {
+                nextTok();
+                if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+                    parseBasicCombsBrackets();
+                } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                        currentToken.tag == DomainTag.I_COMB) {
+                    parseBasicComb();
+                } else
+                    endProgram("expected left_bracket or one of K, S, I combs");
+
+                while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
+                        currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB) {
+                    if (currentToken.tag == DomainTag.LEFT_BRACKET)
+                        parseBasicCombsBrackets();
+                    else
+                        parseBasicComb();
+                }
+            } else
+                endProgram("expected equal_sign");
+        } else
+            endProgram("expected combinator");
+    }
+
+    //BasicCombsBrackets = '(' BasicComb {BasicComb} ')'
+    private void parseBasicCombsBrackets() {
+        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+            nextTok();
+            parseBasicComb();
+
+            while (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                    currentToken.tag == DomainTag.I_COMB) {
+                parseBasicComb();
+            }
+
+            if (currentToken.tag == DomainTag.RIGHT_BRACKET) {
+                nextTok();
+            } else
+                endProgram("expected right_bracket");
+        } else
+            endProgram("expected left_bracket");
+    }
+
+    //BasicComb = 'K' | 'S' | 'I'
+    private void parseBasicComb() {
+        if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                currentToken.tag == DomainTag.I_COMB) {
+            nextTok();
+        } else
+            endProgram("expected one of K, S, I combs");
+    }
+
+    //Task = (CombsBrackets | Comb) {CombsBrackets | Comb}
+    private void parseTask() {
+        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+            parseCombsBrackets();
+        } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
+            parseComb();
+        } else
+            endProgram("expected left_bracket or one of K, S, I combs or another combinator");
+
+        while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
+                currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB ||
+                currentToken.tag == DomainTag.COMBINATOR) {
+            if (currentToken.tag == DomainTag.LEFT_BRACKET)
+                parseCombsBrackets();
+            else
+                parseComb();
+        }
+    }
+
+    //CombsBrackets = '(' Comb {Comb} ')'
+    private void parseCombsBrackets() {
+        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+            nextTok();
+            parseComb();
+
+            while (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                    currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
+                parseComb();
+            }
+
+            if (currentToken.tag == DomainTag.RIGHT_BRACKET) {
+                nextTok();
+            } else
+                endProgram("expected right_bracket");
+        } else
+            endProgram("expected left_bracket");
+    }
+
+    //Comb = BasicComb | comb
+    private void parseComb() {
+        if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
+            nextTok();
+        } else
+            endProgram("expected one of K, S, I combs or another combinator");
+    }
+
+    private void endProgram(String mes) {
+        System.out.println("ERROR" + currentToken.coords + ": " + mes);
+        System.exit(1);
     }
 }

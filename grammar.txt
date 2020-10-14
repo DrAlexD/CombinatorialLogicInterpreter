@@ -1,4 +1,4 @@
-T={'(', ')', comb, "inf", "exp", "quad", '?', '=', 'K', 'S', 'I', $}
+T={'(', ')', c, "inf", "exp", "quad", '?', '=', 'K', 'S', 'I', $}
 N={Prog, Comp, Rule, BasicCombsBrackets, BasicComb, Task, CombsBrackets, Comb}
 S={Prog}
 P=
@@ -9,4 +9,4 @@ P=
 	BasicComb = 'K' | 'S' | 'I'
 	Task = (CombsBrackets | Comb) {CombsBrackets | Comb}
     CombsBrackets = '(' Comb {Comb} ')'
-    Comb = BasicComb | comb
+    Comb = BasicComb | c
