@@ -1,0 +1,5 @@
+inf
+C1 = ISK(KS)
+C2 = KIS
+C3 = S(IK)
+? KSC2C1C3
