@@ -1,12 +1,36 @@
 T={'(', ')', c, "inf", "exp", "quad", '?', '=', 'K', 'S', 'I', $}
-N={Prog, Comp, Rule, BasicCombsBrackets, BasicComb, Task, CombsBrackets, Comb}
+N={Prog, Comp, Rule, BasicCombsInAndOutBrackets, BasicCombsInBrackets, BasicComb, Task,  CombsInAndOutBrackets, CombsInBrackets, Comb}
 S={Prog}
 P=
-	Prog = Comp {Rule} '?' Task
-	Comp = "inf" | "exp" | "quad"
-	Rule = comb '=' (BasicCombsBrackets | BasicComb) {BasicCombsBrackets | BasicComb}
-	BasicCombsBrackets = '(' BasicComb {BasicComb} ')'
-	BasicComb = 'K' | 'S' | 'I'
-	Task = (CombsBrackets | Comb) {CombsBrackets | Comb}
-    CombsBrackets = '(' Comb {Comb} ')'
-    Comb = BasicComb | c
+	                  Prog = Comp {Rule} '?' Task
+	                  Comp = "inf" | "exp" | "quad"
+	                  Rule = c '=' BasicCombsInAndOutBrackets {BasicCombsInAndOutBrackets}
+BasicCombsInAndOutBrackets = BasicComb | BasicCombsInBrackets
+	  BasicCombsInBrackets = '(' BasicCombsInAndOutBrackets {BasicCombsInAndOutBrackets} ')'
+	             BasicComb = 'K' | 'S' | 'I'
+	                  Task = CombsInAndOutBrackets {CombsInAndOutBrackets}
+     CombsInAndOutBrackets = Comb | CombsInBrackets
+           CombsInBrackets = '(' CombsInAndOutBrackets {CombsInAndOutBrackets} ')'
+                      Comb = BasicComb | c
+
+First(Prog)={"inf","exp","quad"}
+First(Comp)={"inf","exp","quad"}
+First(Rule)={c}
+First(BasicCombsInAndOutBrackets)={'K','S','I','('}
+First(BasicCombsInBrackets)={'('}
+First(BasicComb)={'K','S','I'}
+First(Task)={'K','S','I','(', c}
+First(CombsInAndOutBrackets)={'K','S','I','(',c}
+First(CombsInBrackets)={'('}
+First(Comb)={'K','S','I',c}
+
+Follow(Prog)={$}
+Follow(Comp)={c,'?'}
+Follow(Rule)={c,'?'}
+Follow(BasicCombsInAndOutBrackets)={'K','S','I','(',')', c,'?'}
+Follow(BasicCombsInBrackets)={'K','S','I','(',')', c,'?'}
+Follow(BasicComb)={'K','S','I','(',')', c,'?', $}
+Follow(Task)={$}
+Follow(CombsInAndOutBrackets)={'K','S','I','(',')',c, $}
+Follow(CombsInBrackets)={'K','S','I','(',')',c, $}
+Follow(Comb)={'K','S','I','(',')',c, $}

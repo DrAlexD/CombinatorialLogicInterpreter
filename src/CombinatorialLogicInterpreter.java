@@ -3,8 +3,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 class Position {
     String text;
@@ -59,23 +57,6 @@ class Position {
     boolean isDigit() {
         return !isEOF() && String.valueOf(text.charAt(index)).matches("[0-9]");
     }
-
-    /*
-    boolean isBracket() {
-        return !isEOF() && (text.charAt(index) == '(' || text.charAt(index) == ')');
-    }
-
-    boolean isCapLetter() {
-        return !isEOF() && String.valueOf(text.charAt(index)).matches("[A-Z]");
-    }
-
-    boolean isDigit() {
-        return !isEOF() && String.valueOf(text.charAt(index)).matches("[0-9]");
-    }
-
-    boolean isSymbol() {
-        return !isEOF() && text.charAt(index) != '<' && text.charAt(index) != '>' && text.charAt(index) != '{' && text.charAt(index) != '}' && !isCapLetter();
-    }*/
 
     boolean isNewLine() {
         if (isEOF()) {
@@ -137,7 +118,7 @@ class Message {
 enum DomainTag {
     LEFT_BRACKET("("),
     RIGHT_BRACKET(")"),
-    COMBINATOR("c"),
+    USER_COMBINATOR("c"),
     INFINITY_COMP("inf"),
     EXPONENT_COMP("exp"),
     QUADRATE_COMP("quad"),
@@ -156,7 +137,7 @@ enum DomainTag {
     }
 }
 
-abstract class Token {
+abstract class Token implements Cloneable {
     DomainTag tag;
     Fragment coords;
     String attr;
@@ -167,15 +148,32 @@ abstract class Token {
         this.coords = new Fragment(starting, following);
     }
 
+    Token(Token token) {
+        this.tag = token.tag;
+        this.coords = new Fragment(token.coords.starting, token.coords.following);
+        this.attr = token.attr;
+    }
+
+    abstract protected Token clone() throws CloneNotSupportedException;
+
     @Override
     public String toString() {
         return coords.toString() + ": " + attr;
     }
 }
 
-class LeftBracketToken extends Token {
-    LeftBracketToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.LEFT_BRACKET, starting, following);
+class LeftBracketToken extends Token implements Cloneable {
+    LeftBracketToken(Position starting, Position following) {
+        super("(", DomainTag.LEFT_BRACKET, starting, following);
+    }
+
+    LeftBracketToken(LeftBracketToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new LeftBracketToken(this);
     }
 
     @Override
@@ -184,9 +182,18 @@ class LeftBracketToken extends Token {
     }
 }
 
-class RightBracketToken extends Token {
-    RightBracketToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.RIGHT_BRACKET, starting, following);
+class RightBracketToken extends Token implements Cloneable {
+    RightBracketToken(Position starting, Position following) {
+        super(")", DomainTag.RIGHT_BRACKET, starting, following);
+    }
+
+    RightBracketToken(RightBracketToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new RightBracketToken(this);
     }
 
     @Override
@@ -195,20 +202,38 @@ class RightBracketToken extends Token {
     }
 }
 
-class CombinatorToken extends Token {
-    CombinatorToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.COMBINATOR, starting, following);
+class UserCombinatorToken extends Token implements Cloneable {
+    UserCombinatorToken(String attr, Position starting, Position following) {
+        super(attr, DomainTag.USER_COMBINATOR, starting, following);
+    }
+
+    UserCombinatorToken(UserCombinatorToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new UserCombinatorToken(this);
     }
 
     @Override
     public String toString() {
-        return "COMBINATOR " + super.toString();
+        return "USER_COMBINATOR " + super.toString();
     }
 }
 
-class InfinityCompToken extends Token {
-    InfinityCompToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.INFINITY_COMP, starting, following);
+class InfinityCompToken extends Token implements Cloneable {
+    InfinityCompToken(Position starting, Position following) {
+        super("inf", DomainTag.INFINITY_COMP, starting, following);
+    }
+
+    InfinityCompToken(InfinityCompToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new InfinityCompToken(this);
     }
 
     @Override
@@ -217,9 +242,18 @@ class InfinityCompToken extends Token {
     }
 }
 
-class ExponentCompToken extends Token {
-    ExponentCompToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.EXPONENT_COMP, starting, following);
+class ExponentCompToken extends Token implements Cloneable {
+    ExponentCompToken(Position starting, Position following) {
+        super("exp", DomainTag.EXPONENT_COMP, starting, following);
+    }
+
+    ExponentCompToken(ExponentCompToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new ExponentCompToken(this);
     }
 
     @Override
@@ -228,9 +262,18 @@ class ExponentCompToken extends Token {
     }
 }
 
-class QuadrateCompToken extends Token {
-    QuadrateCompToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.QUADRATE_COMP, starting, following);
+class QuadrateCompToken extends Token implements Cloneable {
+    QuadrateCompToken(Position starting, Position following) {
+        super("quad", DomainTag.QUADRATE_COMP, starting, following);
+    }
+
+    QuadrateCompToken(QuadrateCompToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new QuadrateCompToken(this);
     }
 
     @Override
@@ -239,9 +282,18 @@ class QuadrateCompToken extends Token {
     }
 }
 
-class QuestionSignToken extends Token {
-    QuestionSignToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.QUESTION_SIGN, starting, following);
+class QuestionSignToken extends Token implements Cloneable {
+    QuestionSignToken(Position starting, Position following) {
+        super("?", DomainTag.QUESTION_SIGN, starting, following);
+    }
+
+    QuestionSignToken(QuestionSignToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new QuestionSignToken(this);
     }
 
     @Override
@@ -250,9 +302,18 @@ class QuestionSignToken extends Token {
     }
 }
 
-class EqualSignToken extends Token {
-    EqualSignToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.EQUAL_SIGN, starting, following);
+class EqualSignToken extends Token implements Cloneable {
+    EqualSignToken(Position starting, Position following) {
+        super("=", DomainTag.EQUAL_SIGN, starting, following);
+    }
+
+    EqualSignToken(EqualSignToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new EqualSignToken(this);
     }
 
     @Override
@@ -261,9 +322,18 @@ class EqualSignToken extends Token {
     }
 }
 
-class KCombToken extends Token {
-    KCombToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.K_COMB, starting, following);
+class KCombToken extends Token implements Cloneable {
+    KCombToken(Position starting, Position following) {
+        super("K", DomainTag.K_COMB, starting, following);
+    }
+
+    KCombToken(KCombToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new KCombToken(this);
     }
 
     @Override
@@ -272,9 +342,18 @@ class KCombToken extends Token {
     }
 }
 
-class SCombToken extends Token {
-    SCombToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.S_COMB, starting, following);
+class SCombToken extends Token implements Cloneable {
+    SCombToken(Position starting, Position following) {
+        super("S", DomainTag.S_COMB, starting, following);
+    }
+
+    SCombToken(SCombToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new SCombToken(this);
     }
 
     @Override
@@ -283,9 +362,18 @@ class SCombToken extends Token {
     }
 }
 
-class ICombToken extends Token {
-    ICombToken(String attr, Position starting, Position following) {
-        super(attr, DomainTag.I_COMB, starting, following);
+class ICombToken extends Token implements Cloneable {
+    ICombToken(Position starting, Position following) {
+        super("I", DomainTag.I_COMB, starting, following);
+    }
+
+    ICombToken(ICombToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new ICombToken(this);
     }
 
     @Override
@@ -294,9 +382,18 @@ class ICombToken extends Token {
     }
 }
 
-class ErrorToken extends Token {
+class ErrorToken extends Token implements Cloneable {
     ErrorToken(String attr, Position starting, Position following) {
         super(attr, DomainTag.ERROR, starting, following);
+    }
+
+    ErrorToken(ErrorToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new ErrorToken(this);
     }
 
     @Override
@@ -305,10 +402,19 @@ class ErrorToken extends Token {
     }
 }
 
-class EndOfProgramToken extends Token {
+class EndOfProgramToken extends Token implements Cloneable {
     EndOfProgramToken(String attr, DomainTag tag, Position starting, Position following) {
         super(attr, tag, starting, following);
         assert (tag == DomainTag.END_OF_PROGRAM);
+    }
+
+    EndOfProgramToken(EndOfProgramToken token) {
+        super(token);
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new EndOfProgramToken(this);
     }
 
     @Override
@@ -333,16 +439,16 @@ class Scanner {
             while (cur.isWhitespace())
                 cur = cur.next();
             Token token = switch (cur.getCode()) {
-                case '(' -> new LeftBracketToken("(", cur, cur.next());
-                case ')' -> new RightBracketToken(")", cur, cur.next());
-                case '?' -> new QuestionSignToken("?", cur, cur.next());
-                case '=' -> new EqualSignToken("=", cur, cur.next());
-                case 'i' -> new InfinityCompToken("i", cur, cur.next().next().next());
-                case 'e' -> new ExponentCompToken("e", cur, cur.next().next().next());
-                case 'q' -> new QuadrateCompToken("q", cur, cur.next().next().next().next());
-                case 'K' -> new KCombToken("K", cur, cur.next());
-                case 'S' -> new SCombToken("S", cur, cur.next());
-                case 'I' -> new ICombToken("I", cur, cur.next());
+                case '(' -> new LeftBracketToken(cur, cur.next());
+                case ')' -> new RightBracketToken(cur, cur.next());
+                case '?' -> new QuestionSignToken(cur, cur.next());
+                case '=' -> new EqualSignToken(cur, cur.next());
+                case 'i' -> new InfinityCompToken(cur, cur.next().next().next());
+                case 'e' -> new ExponentCompToken(cur, cur.next().next().next());
+                case 'q' -> new QuadrateCompToken(cur, cur.next().next().next().next());
+                case 'K' -> new KCombToken(cur, cur.next());
+                case 'S' -> new SCombToken(cur, cur.next());
+                case 'I' -> new ICombToken(cur, cur.next());
                 case 'C' -> readComb(cur);
                 default -> {
                     compiler.addMessage(true, cur, "Unexpected symbol: " + cur.text.charAt(cur.index));
@@ -369,16 +475,16 @@ class Scanner {
                 sb.append(Character.toChars(p.getCode()));
                 p = p.next();
             }
-            return new CombinatorToken(sb.toString(), cur, p);
+            return new UserCombinatorToken(sb.toString(), cur, p);
         } else {
-            compiler.addMessage(true, cur, "Wrong combinator: " + sb.toString());
+            compiler.addMessage(true, cur, "Wrong user_combinator: " + sb.toString());
             return new ErrorToken(sb.toString(), cur, p);
         }
     }
 }
 
 class Compiler {
-    private final List<Message> messages;
+    private final ArrayList<Message> messages;
 
     public Compiler() {
         messages = new ArrayList<>();
@@ -414,19 +520,19 @@ class Lexer {
         boolean isAfterQuestion = false;
         while (true) {
             Token token = scanner.nextToken();
-            if (token.tag == DomainTag.COMBINATOR) {
-                CombinatorialLogicInterpreter.seq_lexems.append(isAfterQuestion ? "" : "\n");
+            if (token.tag == DomainTag.USER_COMBINATOR) {
+                CombinatorialLogicInterpreter.seq_lexemes.append(isAfterQuestion ? "" : "\n");
             } else if (token.tag == DomainTag.QUESTION_SIGN) {
                 isAfterQuestion = true;
-                CombinatorialLogicInterpreter.seq_lexems.append("\n");
+                CombinatorialLogicInterpreter.seq_lexemes.append("\n");
             } else if (token.tag == DomainTag.EQUAL_SIGN) {
-                CombinatorialLogicInterpreter.seq_lexems.append(" ");
+                CombinatorialLogicInterpreter.seq_lexemes.append(" ");
             }
 
-            CombinatorialLogicInterpreter.seq_lexems.append(token.tag.text);
+            CombinatorialLogicInterpreter.seq_lexemes.append(token.tag.text);
 
             if (token.tag == DomainTag.QUESTION_SIGN || token.tag == DomainTag.EQUAL_SIGN) {
-                CombinatorialLogicInterpreter.seq_lexems.append(" ");
+                CombinatorialLogicInterpreter.seq_lexemes.append(" ");
             }
 
             CombinatorialLogicInterpreter.tokens.add(token);
@@ -438,34 +544,148 @@ class Lexer {
     }
 }
 
-class AnonComb extends Token {
-    private ArrayList<Token> tokensInBrackets = new ArrayList<>();
+class AnonComb extends Token implements Cloneable {
+    ArrayList<Token> tokensInBrackets = new ArrayList<>();
 
-    AnonComb(String attr, Position starting, Position following) {
-        super(attr, DomainTag.COMBINATOR, starting, following);
+    AnonComb(Position starting) {
+        super("", DomainTag.USER_COMBINATOR, starting, starting);
     }
 
-    void addToken(Token token){
+    AnonComb(AnonComb token) throws CloneNotSupportedException {
+        super(token);
+        for (Token t : token.tokensInBrackets) {
+            this.addToken(t.clone());
+        }
+    }
+
+    @Override
+    protected Token clone() throws CloneNotSupportedException {
+        return new AnonComb(this);
+    }
+
+    void addToken(Token token) {
+        if (tokensInBrackets.size() == 0)
+            coords.following = token.coords.starting;
+        coords.following = token.coords.following;
         tokensInBrackets.add(token);
+        attr += token.attr;
     }
 }
 
 public class CombinatorialLogicInterpreter {
     static ArrayList<Token> tokens = new ArrayList<>();
-    static StringBuilder seq_lexems = new StringBuilder();
-
-    private HashMap<String, AnonComb> userCombs = new HashMap<>();
-    private ArrayList<Token> taskTokens = new ArrayList<>();
+    static StringBuilder seq_lexemes = new StringBuilder();
 
     int numberOfCurrentToken;
     Token currentToken;
 
-    public static void main(String[] args) {
+    private final HashMap<String, AnonComb> userCombs = new HashMap<>();
+    private final ArrayList<Token> taskTokens = new ArrayList<>();
+    private int infOrExpOrQuadComp = 0;
+    private int maxNumberOfInterpretations = 0;
+    private int numberOfBasicCombsInTask = 0;
+
+    private int numberOfInterpretations = 0;
+
+    public static void main(String[] args) throws CloneNotSupportedException {
         Lexer l = new Lexer();
         l.lex(args[0]);
-        System.out.println(seq_lexems);
+        System.out.println(seq_lexemes + "\n");
         CombinatorialLogicInterpreter interpreter = new CombinatorialLogicInterpreter();
         interpreter.parse();
+        System.out.println("Max number of interpretations: " + ((interpreter.infOrExpOrQuadComp != 0) ? interpreter.maxNumberOfInterpretations : "infinity"));
+        System.out.println("Start task: " + interpreter.printTree(interpreter.taskTokens) + "\n");
+        ArrayList<Token> normCombs = interpreter.interpret(interpreter.taskTokens);
+        System.out.println("\nNumber of interpretations: " + interpreter.numberOfInterpretations);
+        System.out.println("Result task: " + interpreter.printTree(normCombs));
+    }
+
+    public String printTree(ArrayList<Token> tokens) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (Token token : tokens) {
+            if (token.getClass() == AnonComb.class) {
+                stringBuilder.append("(").append(printTree(((AnonComb) token).tokensInBrackets)).append(")");
+            } else
+                stringBuilder.append(token.attr);
+        }
+
+        return stringBuilder.toString();
+    }
+
+    public ArrayList<Token> interpret(ArrayList<Token> tokens) throws CloneNotSupportedException {
+        int numberOfCombs;
+
+        while ((infOrExpOrQuadComp == 0) || (numberOfInterpretations < maxNumberOfInterpretations)) {
+            numberOfCombs = tokens.size();
+
+            Token firstComb = tokens.get(0);
+            if (firstComb.tag == DomainTag.I_COMB) {
+                if (numberOfCombs > 1) {
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
+                    tokens.remove(0);
+
+                    numberOfInterpretations++;
+                    System.out.println(" -> " + printTree(tokens));
+                } else
+                    break;
+            } else if (firstComb.tag == DomainTag.K_COMB) {
+                if (numberOfCombs > 2) {
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
+                    tokens.remove(2);
+                    tokens.remove(0);
+
+                    numberOfInterpretations++;
+                    System.out.println(" -> " + printTree(tokens));
+                } else
+                    break;
+            } else if (firstComb.tag == DomainTag.S_COMB) {
+                if (numberOfCombs > 3) {
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
+                    Token tempToken2 = tokens.get(2);
+                    Token tempToken3 = tokens.get(3);
+
+                    AnonComb tempAnonComb = new AnonComb(tempToken2.coords.starting);
+                    tempAnonComb.addToken(tempToken2);
+                    tempAnonComb.addToken(tempToken3.clone());
+
+                    tokens.set(2, tempToken3);
+                    tokens.set(3, tempAnonComb);
+                    tokens.remove(0);
+
+                    numberOfInterpretations++;
+                    System.out.println(" -> " + printTree(tokens));
+                } else
+                    break;
+            } else {
+                AnonComb token = (AnonComb) tokens.remove(0);
+                ArrayList<Token> combsList = token.tokensInBrackets; // interpret(token.tokensInBrackets);
+                combsList.addAll(tokens);
+                tokens = combsList;
+            }
+        }
+
+        for (int i = 0; i < tokens.size(); i++) {
+            Token token = tokens.get(i);
+            if (token.tag == DomainTag.USER_COMBINATOR) {
+                AnonComb anonComb = (AnonComb) token;
+                interpret(anonComb.tokensInBrackets);
+                getSoloCombsFromBrackets(anonComb, tokens, i);
+            }
+        }
+
+        return tokens;
+    }
+
+    private void getSoloCombsFromBrackets(AnonComb anonComb, ArrayList<Token> setInTokens, int i) throws CloneNotSupportedException {
+        if (anonComb.tokensInBrackets.size() == 1) {
+            Token childToken = anonComb.tokensInBrackets.get(0);
+            if (childToken.tag == DomainTag.USER_COMBINATOR) {
+                getSoloCombsFromBrackets((AnonComb) childToken, setInTokens, i);
+            } else {
+                setInTokens.set(i, childToken.clone());
+            }
+        }
     }
 
     private void nextTok() {
@@ -473,16 +693,20 @@ public class CombinatorialLogicInterpreter {
         numberOfCurrentToken++;
     }
 
-    public void parse() {
+    public void parse() throws CloneNotSupportedException {
         numberOfCurrentToken = 1;
         currentToken = tokens.get(0);
         parseProg();
+        if (infOrExpOrQuadComp == 1)
+            maxNumberOfInterpretations = (int) Math.pow(2, numberOfBasicCombsInTask + 1);
+        else if (infOrExpOrQuadComp == 2)
+            maxNumberOfInterpretations = (numberOfBasicCombsInTask + 1) * (numberOfBasicCombsInTask + 1);
     }
 
     //Prog = Comp {Rule} '?' Task
-    private void parseProg() {
+    private void parseProg() throws CloneNotSupportedException {
         parseComp();
-        while (currentToken.tag == DomainTag.COMBINATOR) {
+        while (currentToken.tag == DomainTag.USER_COMBINATOR) {
             parseRule();
         }
         if (currentToken.tag == DomainTag.QUESTION_SIGN) {
@@ -498,47 +722,73 @@ public class CombinatorialLogicInterpreter {
     private void parseComp() {
         if (currentToken.tag == DomainTag.INFINITY_COMP || currentToken.tag == DomainTag.EXPONENT_COMP ||
                 currentToken.tag == DomainTag.QUADRATE_COMP) {
+            if (currentToken.tag == DomainTag.EXPONENT_COMP) {
+                infOrExpOrQuadComp = 1;
+            } else if (currentToken.tag == DomainTag.QUADRATE_COMP) {
+                infOrExpOrQuadComp = 2;
+            }
             nextTok();
         } else
             endProgram("expected complexity");
     }
 
-    //Rule = comb '=' (BasicCombsBrackets | BasicComb) {BasicCombsBrackets | BasicComb}
-    private void parseRule() {
-        if (currentToken.tag == DomainTag.COMBINATOR) {
+    //Rule = c '=' BasicCombsInAndOutBrackets {BasicCombsInAndOutBrackets}
+    private void parseRule() throws CloneNotSupportedException {
+        if (currentToken.tag == DomainTag.USER_COMBINATOR) {
+            String userCombName = currentToken.attr;
             nextTok();
             if (currentToken.tag == DomainTag.EQUAL_SIGN) {
                 nextTok();
-                if (currentToken.tag == DomainTag.LEFT_BRACKET) {
-                    parseBasicCombsBrackets();
-                } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
-                        currentToken.tag == DomainTag.I_COMB) {
-                    parseBasicComb();
-                } else
-                    endProgram("expected left_bracket or one of K, S, I combs");
+
+                AnonComb anonComb = new AnonComb(currentToken.coords.starting);
+                Token comb;
+
+                comb = parseBasicCombsInAndOutBrackets();
+                anonComb.addToken(comb);
 
                 while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
                         currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB) {
-                    if (currentToken.tag == DomainTag.LEFT_BRACKET)
-                        parseBasicCombsBrackets();
-                    else
-                        parseBasicComb();
+                    comb = parseBasicCombsInAndOutBrackets();
+                    anonComb.addToken(comb);
                 }
+
+                userCombs.put(userCombName, anonComb);
             } else
                 endProgram("expected equal_sign");
         } else
-            endProgram("expected combinator");
+            endProgram("expected user_combinator");
     }
 
-    //BasicCombsBrackets = '(' BasicComb {BasicComb} ')'
-    private void parseBasicCombsBrackets() {
+    //BasicCombsInAndOutBrackets = BasicComb | BasicCombsInBrackets
+    private Token parseBasicCombsInAndOutBrackets() throws CloneNotSupportedException {
+        Token comb = null;
+
+        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+            comb = parseBasicCombsInBrackets();
+        } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                currentToken.tag == DomainTag.I_COMB) {
+            comb = parseBasicComb();
+        } else
+            endProgram("expected left_bracket or one of K, S, I combs");
+
+        return comb;
+    }
+
+    //BasicCombsInBrackets = '(' BasicCombsInAndOutBrackets {BasicCombsInAndOutBrackets} ')'
+    private Token parseBasicCombsInBrackets() throws CloneNotSupportedException {
+        AnonComb anonComb = new AnonComb(currentToken.coords.starting);
+        Token comb;
+
         if (currentToken.tag == DomainTag.LEFT_BRACKET) {
             nextTok();
-            parseBasicComb();
 
-            while (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
-                    currentToken.tag == DomainTag.I_COMB) {
-                parseBasicComb();
+            comb = parseBasicCombsInAndOutBrackets();
+            anonComb.addToken(comb);
+
+            while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
+                    currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB) {
+                comb = parseBasicCombsInAndOutBrackets();
+                anonComb.addToken(comb);
             }
 
             if (currentToken.tag == DomainTag.RIGHT_BRACKET) {
@@ -547,46 +797,71 @@ public class CombinatorialLogicInterpreter {
                 endProgram("expected right_bracket");
         } else
             endProgram("expected left_bracket");
+
+        return anonComb;
     }
 
     //BasicComb = 'K' | 'S' | 'I'
-    private void parseBasicComb() {
+    private Token parseBasicComb() throws CloneNotSupportedException {
+        Token token = currentToken;
+
         if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
                 currentToken.tag == DomainTag.I_COMB) {
+            token = currentToken.clone();
+            numberOfBasicCombsInTask++;
             nextTok();
         } else
             endProgram("expected one of K, S, I combs");
+
+        return token;
     }
 
-    //Task = (CombsBrackets | Comb) {CombsBrackets | Comb}
-    private void parseTask() {
-        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
-            parseCombsBrackets();
-        } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
-                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
-            parseComb();
-        } else
-            endProgram("expected left_bracket or one of K, S, I combs or another combinator");
+    //Task = CombsInAndOutBrackets {CombsInAndOutBrackets}
+    private void parseTask() throws CloneNotSupportedException {
+        Token comb;
+
+        comb = parseCombsInAndOutBrackets();
+        taskTokens.add(comb);
 
         while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
                 currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB ||
-                currentToken.tag == DomainTag.COMBINATOR) {
-            if (currentToken.tag == DomainTag.LEFT_BRACKET)
-                parseCombsBrackets();
-            else
-                parseComb();
+                currentToken.tag == DomainTag.USER_COMBINATOR) {
+            comb = parseCombsInAndOutBrackets();
+            taskTokens.add(comb);
         }
     }
 
-    //CombsBrackets = '(' Comb {Comb} ')'
-    private void parseCombsBrackets() {
+    //CombsInAndOutBrackets = Comb | CombsInBrackets
+    private Token parseCombsInAndOutBrackets() throws CloneNotSupportedException {
+        Token comb = null;
+
+        if (currentToken.tag == DomainTag.LEFT_BRACKET) {
+            comb = parseCombsInBrackets();
+        } else if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
+                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.USER_COMBINATOR) {
+            comb = parseComb();
+        } else
+            endProgram("expected left_bracket or one of K, S, I combs or another user_combinator");
+
+        return comb;
+    }
+
+    //CombsInBrackets = '(' CombsInAndOutBrackets {CombsInAndOutBrackets} ')'
+    private Token parseCombsInBrackets() throws CloneNotSupportedException {
+        AnonComb anonComb = new AnonComb(currentToken.coords.starting);
+        Token comb;
+
         if (currentToken.tag == DomainTag.LEFT_BRACKET) {
             nextTok();
-            parseComb();
 
-            while (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
-                    currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
-                parseComb();
+            comb = parseCombsInAndOutBrackets();
+            anonComb.addToken(comb);
+
+            while (currentToken.tag == DomainTag.LEFT_BRACKET || currentToken.tag == DomainTag.K_COMB ||
+                    currentToken.tag == DomainTag.S_COMB || currentToken.tag == DomainTag.I_COMB ||
+                    currentToken.tag == DomainTag.USER_COMBINATOR) {
+                comb = parseCombsInAndOutBrackets();
+                anonComb.addToken(comb);
             }
 
             if (currentToken.tag == DomainTag.RIGHT_BRACKET) {
@@ -595,15 +870,27 @@ public class CombinatorialLogicInterpreter {
                 endProgram("expected right_bracket");
         } else
             endProgram("expected left_bracket");
+
+        return anonComb;
     }
 
-    //Comb = BasicComb | comb
-    private void parseComb() {
+    //Comb = BasicComb | c
+    private Token parseComb() throws CloneNotSupportedException {
+        Token token = currentToken;
+
         if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
-                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.COMBINATOR) {
+                currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.USER_COMBINATOR) {
+            if (currentToken.tag == DomainTag.USER_COMBINATOR) {
+                token = userCombs.get(currentToken.attr).clone();
+            } else {
+                token = currentToken.clone();
+                numberOfBasicCombsInTask++;
+            }
             nextTok();
         } else
-            endProgram("expected one of K, S, I combs or another combinator");
+            endProgram("expected one of K, S, I combs or another user_combinator");
+
+        return token;
     }
 
     private void endProgram(String mes) {
