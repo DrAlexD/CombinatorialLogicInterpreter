@@ -554,7 +554,7 @@ class AnonComb extends Token implements Cloneable {
     AnonComb(AnonComb token) throws CloneNotSupportedException {
         super(token);
         for (Token t : token.tokensInBrackets) {
-            this.addToken(t.clone());
+            this.tokensInBrackets.add(t.clone());
         }
     }
 
@@ -568,7 +568,10 @@ class AnonComb extends Token implements Cloneable {
             coords.following = token.coords.starting;
         coords.following = token.coords.following;
         tokensInBrackets.add(token);
-        attr += token.attr;
+        if (token.tag == DomainTag.USER_COMBINATOR) {
+            attr += "(" + token.attr + ")";
+        } else
+            attr += token.attr;
     }
 }
 
@@ -604,7 +607,7 @@ public class CombinatorialLogicInterpreter {
         StringBuilder stringBuilder = new StringBuilder();
 
         for (Token token : tokens) {
-            if (token.getClass() == AnonComb.class) {
+            if (token.tag == DomainTag.USER_COMBINATOR) {
                 stringBuilder.append("(").append(printTree(((AnonComb) token).tokensInBrackets)).append(")");
             } else
                 stringBuilder.append(token.attr);
