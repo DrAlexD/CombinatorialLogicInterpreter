@@ -600,7 +600,7 @@ public class CombinatorialLogicInterpreter {
         System.out.println("Start task: " + interpreter.printTree(interpreter.taskTokens) + "\n");
         ArrayList<Token> normCombs = interpreter.interpret(interpreter.taskTokens);
         System.out.println("\nNumber of interpretations: " + interpreter.numberOfInterpretations);
-        System.out.println("Result task: " + interpreter.printTree(normCombs));
+        System.out.println("Result: " + interpreter.printTree(normCombs));
     }
 
     public String printTree(ArrayList<Token> tokens) {
@@ -619,12 +619,13 @@ public class CombinatorialLogicInterpreter {
     public ArrayList<Token> interpret(ArrayList<Token> tokens) throws CloneNotSupportedException {
         int numberOfCombs;
 
-        while ((infOrExpOrQuadComp == 0) || (numberOfInterpretations < maxNumberOfInterpretations)) {
+        while (true) {
             numberOfCombs = tokens.size();
 
             Token firstComb = tokens.get(0);
             if (firstComb.tag == DomainTag.I_COMB) {
-                if (numberOfCombs > 1) {
+                if (numberOfCombs > 1 && (infOrExpOrQuadComp == 0 ||
+                        numberOfInterpretations < maxNumberOfInterpretations)) {
                     System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
                     tokens.remove(0);
 
@@ -633,7 +634,8 @@ public class CombinatorialLogicInterpreter {
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.K_COMB) {
-                if (numberOfCombs > 2) {
+                if (numberOfCombs > 2 && (infOrExpOrQuadComp == 0 ||
+                        numberOfInterpretations < maxNumberOfInterpretations)) {
                     System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
                     tokens.remove(2);
                     tokens.remove(0);
@@ -643,7 +645,8 @@ public class CombinatorialLogicInterpreter {
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.S_COMB) {
-                if (numberOfCombs > 3) {
+                if (numberOfCombs > 3 && (infOrExpOrQuadComp == 0 ||
+                        numberOfInterpretations < maxNumberOfInterpretations)) {
                     System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
                     Token tempToken2 = tokens.get(2);
                     Token tempToken3 = tokens.get(3);
