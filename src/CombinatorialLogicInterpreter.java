@@ -603,10 +603,10 @@ public class CombinatorialLogicInterpreter {
         System.out.println("Result: " + interpreter.printTree(normCombs));
     }
 
-    public String printTree(ArrayList<Token> tokens) {
+    public String printTree(ArrayList<Token> currentTokens) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        for (Token token : tokens) {
+        for (Token token : currentTokens) {
             if (token.tag == DomainTag.USER_COMBINATOR) {
                 stringBuilder.append("(").append(printTree(((AnonComb) token).tokensInBrackets)).append(")");
             } else
@@ -616,71 +616,72 @@ public class CombinatorialLogicInterpreter {
         return stringBuilder.toString();
     }
 
-    public ArrayList<Token> interpret(ArrayList<Token> tokens) throws CloneNotSupportedException {
+    public ArrayList<Token> interpret(ArrayList<Token> currentTokens) throws CloneNotSupportedException {
         int numberOfCombs;
 
         while (true) {
-            numberOfCombs = tokens.size();
+            numberOfCombs = currentTokens.size();
 
-            Token firstComb = tokens.get(0);
+            Token firstComb = currentTokens.get(0);
             if (firstComb.tag == DomainTag.I_COMB) {
                 if (numberOfCombs > 1 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
-                    tokens.remove(0);
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(tokens));
+                    System.out.println(" -> " + printTree(currentTokens));
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.K_COMB) {
                 if (numberOfCombs > 2 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
-                    tokens.remove(2);
-                    tokens.remove(0);
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    currentTokens.remove(2);
+                    currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(tokens));
+                    System.out.println(" -> " + printTree(currentTokens));
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.S_COMB) {
                 if (numberOfCombs > 3 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(tokens));
-                    Token tempToken2 = tokens.get(2);
-                    Token tempToken3 = tokens.get(3);
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    Token tempToken2 = currentTokens.get(2);
+                    Token tempToken3 = currentTokens.get(3);
 
                     AnonComb tempAnonComb = new AnonComb(tempToken2.coords.starting);
                     tempAnonComb.addToken(tempToken2);
                     tempAnonComb.addToken(tempToken3.clone());
 
-                    tokens.set(2, tempToken3);
-                    tokens.set(3, tempAnonComb);
-                    tokens.remove(0);
+                    currentTokens.set(2, tempToken3);
+                    currentTokens.set(3, tempAnonComb);
+                    currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(tokens));
+                    System.out.println(" -> " + printTree(currentTokens));
                 } else
                     break;
             } else {
-                AnonComb token = (AnonComb) tokens.remove(0);
-                ArrayList<Token> combsList = token.tokensInBrackets; // interpret(token.tokensInBrackets);
-                combsList.addAll(tokens);
-                tokens = combsList;
+                AnonComb token = (AnonComb) currentTokens.remove(0);
+                ArrayList<Token> combsList = new ArrayList<>(token.tokensInBrackets); // interpret(token.tokensInBrackets);
+                combsList.addAll(currentTokens);
+                currentTokens.clear();
+                currentTokens.addAll(combsList);
             }
         }
 
-        for (int i = 0; i < tokens.size(); i++) {
-            Token token = tokens.get(i);
+        for (int i = 0; i < currentTokens.size(); i++) {
+            Token token = currentTokens.get(i);
             if (token.tag == DomainTag.USER_COMBINATOR) {
                 AnonComb anonComb = (AnonComb) token;
                 interpret(anonComb.tokensInBrackets);
-                getSoloCombsFromBrackets(anonComb, tokens, i);
+                getSoloCombsFromBrackets(anonComb, currentTokens, i);
             }
         }
 
-        return tokens;
+        return currentTokens;
     }
 
     private void getSoloCombsFromBrackets(AnonComb anonComb, ArrayList<Token> setInTokens, int i) throws CloneNotSupportedException {
