@@ -598,9 +598,9 @@ public class CombinatorialLogicInterpreter {
         interpreter.parse();
         System.out.println("Max number of interpretations: " + ((interpreter.infOrExpOrQuadComp != 0) ? interpreter.maxNumberOfInterpretations : "infinity"));
         System.out.println("Start task: " + interpreter.printTree(interpreter.taskTokens) + "\n");
-        ArrayList<Token> normCombs = interpreter.interpret(interpreter.taskTokens);
+        interpreter.interpret(interpreter.taskTokens);
         System.out.println("\nNumber of interpretations: " + interpreter.numberOfInterpretations);
-        System.out.println("Result: " + interpreter.printTree(normCombs));
+        System.out.println("Result: " + interpreter.printTree(interpreter.taskTokens));
     }
 
     public String printTree(ArrayList<Token> currentTokens) {
@@ -616,7 +616,7 @@ public class CombinatorialLogicInterpreter {
         return stringBuilder.toString();
     }
 
-    public ArrayList<Token> interpret(ArrayList<Token> currentTokens) throws CloneNotSupportedException {
+    public void interpret(ArrayList<Token> currentTokens) throws CloneNotSupportedException {
         int numberOfCombs;
 
         while (true) {
@@ -626,28 +626,28 @@ public class CombinatorialLogicInterpreter {
             if (firstComb.tag == DomainTag.I_COMB) {
                 if (numberOfCombs > 1 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(taskTokens));
                     currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(currentTokens));
+                    System.out.println(" -> " + printTree(taskTokens));
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.K_COMB) {
                 if (numberOfCombs > 2 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(taskTokens));
                     currentTokens.remove(2);
                     currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(currentTokens));
+                    System.out.println(" -> " + printTree(taskTokens));
                 } else
                     break;
             } else if (firstComb.tag == DomainTag.S_COMB) {
                 if (numberOfCombs > 3 && (infOrExpOrQuadComp == 0 ||
                         numberOfInterpretations < maxNumberOfInterpretations)) {
-                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(currentTokens));
+                    System.out.print(numberOfInterpretations + 1 + ") " + printTree(taskTokens));
                     Token tempToken2 = currentTokens.get(2);
                     Token tempToken3 = currentTokens.get(3);
 
@@ -660,7 +660,7 @@ public class CombinatorialLogicInterpreter {
                     currentTokens.remove(0);
 
                     numberOfInterpretations++;
-                    System.out.println(" -> " + printTree(currentTokens));
+                    System.out.println(" -> " + printTree(taskTokens));
                 } else
                     break;
             } else {
@@ -680,8 +680,6 @@ public class CombinatorialLogicInterpreter {
                 getSoloCombsFromBrackets(anonComb, currentTokens, i);
             }
         }
-
-        return currentTokens;
     }
 
     private void getSoloCombsFromBrackets(AnonComb anonComb, ArrayList<Token> setInTokens, int i) throws CloneNotSupportedException {
