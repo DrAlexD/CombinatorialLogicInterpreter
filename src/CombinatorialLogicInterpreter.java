@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -582,11 +583,12 @@ public class CombinatorialLogicInterpreter {
     int numberOfCurrentToken;
     Token currentToken;
 
-    private final HashMap<String, AnonComb> userCombs = new HashMap<>();
+    private final HashMap<String, AbstractMap.SimpleEntry<AnonComb, Integer>> userCombs = new HashMap<>();
     private final ArrayList<Token> taskTokens = new ArrayList<>();
     private int infOrExpOrQuadComp = 0;
     private int maxNumberOfInterpretations = 0;
     private int numberOfBasicCombsInTask = 0;
+    private int numberOfBasicCombsInUserComb;
 
     private int numberOfInterpretations = 0;
 
@@ -741,6 +743,7 @@ public class CombinatorialLogicInterpreter {
     private void parseRule() throws CloneNotSupportedException {
         if (currentToken.tag == DomainTag.USER_COMBINATOR) {
             String userCombName = currentToken.attr;
+            numberOfBasicCombsInUserComb = 0;
             nextTok();
             if (currentToken.tag == DomainTag.EQUAL_SIGN) {
                 nextTok();
@@ -757,7 +760,7 @@ public class CombinatorialLogicInterpreter {
                     anonComb.addToken(comb);
                 }
 
-                userCombs.put(userCombName, anonComb);
+                userCombs.put(userCombName, new AbstractMap.SimpleEntry<>(anonComb, numberOfBasicCombsInUserComb));
             } else
                 endProgram("expected equal_sign");
         } else
@@ -813,7 +816,7 @@ public class CombinatorialLogicInterpreter {
         if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
                 currentToken.tag == DomainTag.I_COMB) {
             token = currentToken.clone();
-            numberOfBasicCombsInTask++;
+            numberOfBasicCombsInUserComb++;
             nextTok();
         } else
             endProgram("expected one of K, S, I combs");
@@ -886,7 +889,12 @@ public class CombinatorialLogicInterpreter {
         if (currentToken.tag == DomainTag.K_COMB || currentToken.tag == DomainTag.S_COMB ||
                 currentToken.tag == DomainTag.I_COMB || currentToken.tag == DomainTag.USER_COMBINATOR) {
             if (currentToken.tag == DomainTag.USER_COMBINATOR) {
-                token = userCombs.get(currentToken.attr).clone();
+                if (userCombs.containsKey(currentToken.attr)) {
+                    AbstractMap.SimpleEntry<AnonComb, Integer> entry = userCombs.get(currentToken.attr);
+                    token = entry.getKey().clone();
+                    numberOfBasicCombsInTask += entry.getValue();
+                } else
+                    endProgram("unexpected name of user_combinator");
             } else {
                 token = currentToken.clone();
                 numberOfBasicCombsInTask++;
